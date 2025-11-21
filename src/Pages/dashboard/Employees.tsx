@@ -6,22 +6,27 @@ import {
   HiPlus,
   HiChevronLeft,
   HiChevronRight,
+  HiTrash,
 } from 'react-icons/hi2';
 import Modal from '../../components/Modal';
 import { useToast } from '../../components/Toast';
-
-interface Employee {
-  id: string;
-  name: string;
-  role: 'Manager' | 'Admin' | 'Technician';
-  empCode: string;
-  joiningDate: string;
-  avatar?: string;
-  isManagement: boolean;
-}
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import {
+  getStoresList,
+  getEmployeesByStore,
+  createEmployee,
+  deleteEmployee,
+  setSelectedStoreId,
+  type CreateEmployeeData,
+} from '../../Slices/dashboard/Employee/employee-slice';
 
 const Employees: React.FC = () => {
   const { showToast } = useToast();
+  const dispatch = useAppDispatch();
+  const { employees, stores, isLoading, isSuccess, isError, errorMessage, message } = useAppSelector(
+    (state) => state.employee
+  );
+
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -29,119 +34,68 @@ const Employees: React.FC = () => {
   const [selectedRole, setSelectedRole] = useState<string>('all');
   const [selectedManagement, setSelectedManagement] = useState<string>('all');
   const filterRef = useRef<HTMLDivElement>(null);
+  const [localSelectedStoreId, setLocalSelectedStoreId] = useState<string>('all');
 
   // Form state for Add Employee
-  const [formData, setFormData] = useState({
-    name: '',
-    role: 'Technician' as 'Manager' | 'Admin' | 'Technician',
-    empCode: '',
-    joiningDate: '',
+  const [formData, setFormData] = useState<CreateEmployeeData>({
+    storeId: '',
+    fullName: '',
     email: '',
+    password: '',
     phone: '',
+    role: 'Technician',
+    employeeCode: '',
+    hourlyRate: 0,
+    address: {
+      streetNumber: '',
+      streetName: '',
+      city: '',
+      state: '',
+      postalCode: '',
+    },
+    emergencyContactName: '',
+    emergencyContactPhone: '',
+    permissions: {},
   });
-
-  // Sample employee data - in production, this would come from an API
-  const [employees, setEmployees] = useState<Employee[]>([
-    {
-      id: '1',
-      name: 'John Smith',
-      role: 'Manager',
-      empCode: '01102021-7437',
-      joiningDate: '03-Jan-2022',
-      isManagement: true,
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      role: 'Admin',
-      empCode: '7634768-673',
-      joiningDate: '11-Jan-2021',
-      isManagement: true,
-    },
-    {
-      id: '3',
-      name: 'Mike Davis',
-      role: 'Technician',
-      empCode: '647637-009',
-      joiningDate: '08-Feb-2022',
-      isManagement: false,
-    },
-    {
-      id: '4',
-      name: 'Emily Wilson',
-      role: 'Manager',
-      empCode: '6565647-6737',
-      joiningDate: '01-Aug-2021',
-      isManagement: true,
-    },
-    {
-      id: '5',
-      name: 'David Brown',
-      role: 'Technician',
-      empCode: '754788-747',
-      joiningDate: '01-Oct-2022',
-      isManagement: false,
-    },
-    {
-      id: '6',
-      name: 'Lisa Anderson',
-      role: 'Admin',
-      empCode: '456578-737',
-      joiningDate: '01-Jan-2023',
-      isManagement: true,
-    },
-    {
-      id: '7',
-      name: 'Robert Taylor',
-      role: 'Technician',
-      empCode: '01102021-786',
-      joiningDate: '01-Jan-2021',
-      isManagement: false,
-    },
-    {
-      id: '8',
-      name: 'Jennifer Martinez',
-      role: 'Manager',
-      empCode: '01102021-676',
-      joiningDate: '01-Jan-2021',
-      isManagement: true,
-    },
-    {
-      id: '9',
-      name: 'Michael Garcia',
-      role: 'Technician',
-      empCode: '01102021-009',
-      joiningDate: '05-Jan-2021',
-      isManagement: false,
-    },
-    {
-      id: '10',
-      name: 'Amanda Lee',
-      role: 'Admin',
-      empCode: '01102021-010',
-      joiningDate: '06-Jan-2021',
-      isManagement: true,
-    },
-    {
-      id: '11',
-      name: 'Christopher White',
-      role: 'Technician',
-      empCode: '01102021-011',
-      joiningDate: '05-Jan-2021',
-      isManagement: false,
-    },
-    {
-      id: '12',
-      name: 'Jessica Harris',
-      role: 'Manager',
-      empCode: '16502021-56',
-      joiningDate: '01-Jan-2021',
-      isManagement: true,
-    },
-  ]);
 
   const employeesPerPage = 12;
   const totalEmployees = employees.length;
+
+  // Fetch stores on mount
+  useEffect(() => {
+    dispatch(getStoresList());
+  }, [dispatch]);
+
+  // Fetch employees when store is selected
+  useEffect(() => {
+    if (localSelectedStoreId && localSelectedStoreId !== 'all') {
+      dispatch(
+        getEmployeesByStore({
+          storeId: localSelectedStoreId,
+          role: selectedRole !== 'all' ? selectedRole : undefined,
+        })
+      );
+      dispatch(setSelectedStoreId(localSelectedStoreId));
+    } else {
+      dispatch(setSelectedStoreId(null));
+    }
+  }, [dispatch, localSelectedStoreId, selectedRole]);
+
+  // Show toast messages
+  useEffect(() => {
+    if (isSuccess && message) {
+      showToast({
+        message,
+        type: 'success',
+      });
+    }
+    if (isError && errorMessage) {
+      showToast({
+        message: errorMessage,
+        type: 'error',
+      });
+    }
+  }, [isSuccess, isError, message, errorMessage, showToast]);
 
   // Close filter dropdown when clicking outside
   useEffect(() => {
@@ -164,15 +118,16 @@ const Employees: React.FC = () => {
   const filteredEmployees = useMemo(() => {
     return employees.filter((employee) => {
       const matchesSearch =
-        employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        employee.empCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        employee.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        employee.employeeCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
         employee.role.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesRole = selectedRole === 'all' || employee.role === selectedRole;
+      const isManagement = employee.role === 'Manager' || employee.role === 'Admin';
       const matchesManagement =
         selectedManagement === 'all' ||
-        (selectedManagement === 'management' && employee.isManagement) ||
-        (selectedManagement === 'non-management' && !employee.isManagement);
+        (selectedManagement === 'management' && isManagement) ||
+        (selectedManagement === 'non-management' && !isManagement);
 
       return matchesSearch && matchesRole && matchesManagement;
     });
@@ -187,25 +142,30 @@ const Employees: React.FC = () => {
   // Format date to DD-MMM-YYYY format
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    const day = date.getDate().toString().padStart(2, '0');
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return dateString;
+      const day = date.getDate().toString().padStart(2, '0');
+      const months = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec',
+      ];
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      return `${day}-${month}-${year}`;
+    } catch {
+      return dateString;
+    }
   };
 
   // Generate avatar initials
@@ -222,19 +182,19 @@ const Employees: React.FC = () => {
   const getRoleTagColor = (role: string) => {
     switch (role) {
       case 'Manager':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-[#007BFF]/10 text-[#007BFF]';
       case 'Admin':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-[#007BFF]/10 text-[#007BFF]';
       case 'Technician':
-        return 'bg-green-100 text-green-700';
+        return 'bg-[#007BFF]/10 text-[#007BFF]';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-[#007BFF]/10 text-[#007BFF]';
     }
   };
 
   // Handle add employee
-  const handleAddEmployee = () => {
-    if (!formData.name || !formData.empCode || !formData.joiningDate) {
+  const handleAddEmployee = async () => {
+    if (!formData.fullName || !formData.employeeCode || !formData.email || !formData.password || !formData.storeId) {
       showToast({
         message: 'Please fill in all required fields',
         type: 'error',
@@ -242,30 +202,61 @@ const Employees: React.FC = () => {
       return;
     }
 
-    const isManagement = formData.role === 'Manager' || formData.role === 'Admin';
-    const newEmployee: Employee = {
-      id: Date.now().toString(),
-      name: formData.name,
-      role: formData.role,
-      empCode: formData.empCode,
-      joiningDate: formatDate(formData.joiningDate),
-      isManagement,
-    };
+    try {
+      await dispatch(createEmployee(formData)).unwrap();
+      setIsAddModalOpen(false);
+      setFormData({
+        storeId: localSelectedStoreId !== 'all' ? localSelectedStoreId : '',
+        fullName: '',
+        email: '',
+        password: '',
+        phone: '',
+        role: 'Technician',
+        employeeCode: '',
+        hourlyRate: 0,
+        address: {
+          streetNumber: '',
+          streetName: '',
+          city: '',
+          state: '',
+          postalCode: '',
+        },
+        emergencyContactName: '',
+        emergencyContactPhone: '',
+        permissions: {},
+      });
+      // Refresh employees list
+      if (localSelectedStoreId && localSelectedStoreId !== 'all') {
+        dispatch(
+          getEmployeesByStore({
+            storeId: localSelectedStoreId,
+            role: selectedRole !== 'all' ? selectedRole : undefined,
+          })
+        );
+      }
+    } catch (error) {
+      // Error is handled by the slice and shown via toast
+    }
+  };
 
-    setEmployees([...employees, newEmployee]);
-    showToast({
-      message: 'Employee added successfully',
-      type: 'success',
-    });
-    setIsAddModalOpen(false);
-    setFormData({
-      name: '',
-      role: 'Technician',
-      empCode: '',
-      joiningDate: '',
-      email: '',
-      phone: '',
-    });
+  // Handle delete employee
+  const handleDeleteEmployee = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this employee?')) {
+      try {
+        await dispatch(deleteEmployee(id)).unwrap();
+        // Refresh employees list
+        if (localSelectedStoreId && localSelectedStoreId !== 'all') {
+          dispatch(
+            getEmployeesByStore({
+              storeId: localSelectedStoreId,
+              role: selectedRole !== 'all' ? selectedRole : undefined,
+            })
+          );
+        }
+      } catch (error) {
+        // Error is handled by the slice and shown via toast
+      }
+    }
   };
 
   // Handle import employees
@@ -324,7 +315,24 @@ const Employees: React.FC = () => {
             All the employees of the company are listed here.
           </p>
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-[10px]">
+          {/* Filter by store id */}
+          <select
+            value={localSelectedStoreId}
+            onChange={(e) => {
+              setLocalSelectedStoreId(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#E0E7F1] rounded-lg text-[#1A1F36] hover:bg-[#F5F8FF] transition-colors text-sm font-medium"
+          >
+            <option value="all">All Stores</option>
+            {stores.map((store) => (
+              <option key={store.id} value={store.id}>
+                {store.storeName}
+              </option>
+            ))}
+          </select>
+
           <button
             onClick={handleImportEmployees}
             className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#E0E7F1] rounded-lg text-[#1A1F36] hover:bg-[#F5F8FF] transition-colors text-sm font-medium"
@@ -333,7 +341,29 @@ const Employees: React.FC = () => {
             <span className="hidden sm:inline">Import Employees</span>
           </button>
           <button
-            onClick={() => setIsAddModalOpen(true)}
+            onClick={() => {
+              setFormData({
+                storeId: localSelectedStoreId !== 'all' ? localSelectedStoreId : '',
+                fullName: '',
+                email: '',
+                password: '',
+                phone: '',
+                role: 'Technician',
+                employeeCode: '',
+                hourlyRate: 0,
+                address: {
+                  streetNumber: '',
+                  streetName: '',
+                  city: '',
+                  state: '',
+                  postalCode: '',
+                },
+                emergencyContactName: '',
+                emergencyContactPhone: '',
+                permissions: {},
+              });
+              setIsAddModalOpen(true);
+            }}
             className="flex items-center gap-2 px-4 py-2.5 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors text-sm font-medium"
           >
             <HiPlus className="w-5 h-5" />
@@ -349,7 +379,7 @@ const Employees: React.FC = () => {
           <HiMagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#4A5568]" />
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search" 
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -412,72 +442,131 @@ const Employees: React.FC = () => {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="bg-white rounded-xl border border-[#E0E7F1] p-12 text-center">
+          <p className="text-[#4A5568]">Loading employees...</p>
+        </div>
+      )}
+
       {/* Employees Grid */}
-      {currentEmployees.length > 0 ? (
+      {!isLoading && currentEmployees.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {currentEmployees.map((employee) => (
             <div
               key={employee.id}
-              className="bg-white rounded-xl border border-[#E0E7F1] p-6 hover:shadow-md transition-shadow"
+              className="bg-white rounded-2xl border border-[#E0E7F1] overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col w-full max-w-[300px] mx-auto h-full min-h-[360px] group"
             >
-              {/* Avatar */}
-              <div className="flex justify-center mb-4">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#007BFF] to-[#0056B3] flex items-center justify-center text-white text-2xl font-semibold">
-                  {getInitials(employee.name)}
+              {/* Gradient Header */}
+              <div className="relative bg-gradient-to-br from-[#007BFF] via-[#0056B3] to-[#003D82] h-16 flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/5"></div>
+                {/* Avatar with border */}
+                <div className="relative z-10 -mb-6">
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#007BFF] to-[#0056B3] flex items-center justify-center text-white text-lg font-semibold shadow-lg ring-3 ring-white">
+                    {getInitials(employee.fullName)}
+                  </div>
                 </div>
               </div>
 
-              {/* Name and Role */}
-              <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-[#1A1F36] mb-1">
-                  {employee.name}
-                </h3>
-                <p className="text-sm text-[#4A5568]">{employee.role}</p>
-              </div>
+              {/* Content */}
+              <div className="flex-1 flex flex-col pt-8 px-4 pb-4">
+                {/* Name and Role */}
+                <div className="text-center mb-3">
+                  <h3 className="text-base font-bold text-[#1A1F36] mb-0.5 truncate w-full">
+                    {employee.fullName || 'N/A'}
+                  </h3>
+                  <p className="text-xs text-[#007BFF] font-medium">{employee.role || 'N/A'}</p>
+                </div>
 
-              {/* Tags */}
-              <div className="flex justify-center gap-2 mb-4 flex-wrap">
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${getRoleTagColor(
-                    employee.role
-                  )}`}
-                >
-                  {employee.role}
-                </span>
-                <span
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    employee.isManagement
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {employee.isManagement ? 'Management' : 'Non-Management'}
-                </span>
-              </div>
-
-              {/* Employee Details */}
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#4A5568]">Emp Code:</span>
-                  <span className="text-[#1A1F36] font-medium">
-                    {employee.empCode}
+                {/* Tags */}
+                <div className="flex justify-center gap-1.5 mb-3 flex-wrap">
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm ${getRoleTagColor(
+                      employee.role
+                    )}`}
+                  >
+                    {employee.role || 'N/A'}
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm ${
+                      employee.role === 'Manager' || employee.role === 'Admin'
+                        ? 'bg-[#007BFF]/10 text-[#007BFF]'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    {employee.role === 'Manager' || employee.role === 'Admin'
+                      ? 'Management'
+                      : 'Non-Management'}
+                  </span>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm ${
+                      employee.isActive
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {employee.isActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#4A5568]">Joining Date:</span>
-                  <span className="text-[#1A1F36] font-medium">
-                    {employee.joiningDate}
-                  </span>
+
+                {/* Employee Details */}
+                <div className="space-y-1 text-xs flex-grow bg-gradient-to-b from-transparent to-[#F5F8FF]/30 rounded-lg p-2.5 -mx-1">
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-[#4A5568] font-medium">Emp Code:</span>
+                    <span className="text-[#1A1F36] font-semibold truncate ml-2 text-right">
+                      {employee.employeeCode || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-[#4A5568] font-medium">Email:</span>
+                    <span className="text-[#1A1F36] font-semibold truncate ml-2 text-right max-w-[60%]" title={employee.email}>
+                      {employee.email || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-[#4A5568] font-medium">Phone:</span>
+                    <span className="text-[#1A1F36] font-semibold truncate ml-2 text-right">
+                      {employee.phone || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-[#4A5568] font-medium">Hourly Rate:</span>
+                    <span className="text-[#007BFF] font-bold">
+                      ${employee.hourlyRate || '0'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center py-0.5">
+                    <span className="text-[#4A5568] font-medium">Created:</span>
+                    <span className="text-[#1A1F36] font-semibold text-right">
+                      {employee.createdAt ? formatDate(employee.createdAt) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Delete Button */}
+                <div className="mt-3 pt-3 border-t border-[#E0E7F1]">
+                  <button
+                    onClick={() => handleDeleteEmployee(employee.id)}
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-red-50 to-red-50 text-red-600 rounded-lg hover:from-red-100 hover:to-red-100 transition-all duration-200 text-xs font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+                  >
+                    <HiTrash className="w-3.5 h-3.5" />
+                    Delete Employee
+                  </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-      ) : (
+      ) : !isLoading ? (
         <div className="bg-white rounded-xl border border-[#E0E7F1] p-12 text-center">
-          <p className="text-[#4A5568]">No employees found matching your criteria.</p>
+          <p className="text-[#4A5568]">
+            {localSelectedStoreId === 'all'
+              ? 'Please select a store to view employees.'
+              : 'No employees found matching your criteria.'}
+          </p>
         </div>
-      )}
+      ) : null}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -499,11 +588,10 @@ const Employees: React.FC = () => {
                 ) : (
                   <button
                     onClick={() => setCurrentPage(page as number)}
-                    className={`px-4 py-2 rounded-lg transition-colors ${
-                      currentPage === page
+                    className={`px-4 py-2 rounded-lg transition-colors ${currentPage === page
                         ? 'bg-[#007BFF] text-white'
                         : 'text-[#1A1F36] hover:bg-[#F5F8FF]'
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>
@@ -530,15 +618,33 @@ const Employees: React.FC = () => {
         title="Add New Employee"
         size="lg"
       >
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Store *
+            </label>
+            <select
+              value={formData.storeId}
+              onChange={(e) => setFormData({ ...formData, storeId: e.target.value })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+            >
+              <option value="">Select a store</option>
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.storeName}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-sm font-medium text-[#1A1F36] mb-2">
               Full Name *
             </label>
             <input
               type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              value={formData.fullName}
+              onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
               placeholder="Enter full name"
             />
@@ -546,52 +652,7 @@ const Employees: React.FC = () => {
 
           <div>
             <label className="block text-sm font-medium text-[#1A1F36] mb-2">
-              Role *
-            </label>
-            <select
-              value={formData.role}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  role: e.target.value as 'Manager' | 'Admin' | 'Technician',
-                })
-              }
-              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
-            >
-              <option value="Manager">Manager</option>
-              <option value="Admin">Admin</option>
-              <option value="Technician">Technician</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
-              Employee Code *
-            </label>
-            <input
-              type="text"
-              value={formData.empCode}
-              onChange={(e) => setFormData({ ...formData, empCode: e.target.value })}
-              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
-              placeholder="Enter employee code"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
-              Joining Date *
-            </label>
-            <input
-              type="date"
-              value={formData.joiningDate}
-              onChange={(e) => setFormData({ ...formData, joiningDate: e.target.value })}
-              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
-              Email
+              Email *
             </label>
             <input
               type="email"
@@ -599,6 +660,19 @@ const Employees: React.FC = () => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
               placeholder="Enter email address"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Password *
+            </label>
+            <input
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+              placeholder="Enter password"
             />
           </div>
 
@@ -615,6 +689,165 @@ const Employees: React.FC = () => {
             />
           </div>
 
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Role *
+            </label>
+            <select
+              value={formData.role}
+              onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+            >
+              <option value="Manager">Manager</option>
+              <option value="Admin">Admin</option>
+              <option value="Technician">Technician</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Employee Code *
+            </label>
+            <input
+              type="text"
+              value={formData.employeeCode}
+              onChange={(e) => setFormData({ ...formData, employeeCode: e.target.value })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+              placeholder="Enter employee code"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Hourly Rate
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={formData.hourlyRate}
+              onChange={(e) => setFormData({ ...formData, hourlyRate: parseFloat(e.target.value) || 0 })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+              placeholder="Enter hourly rate"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+                Street Number
+              </label>
+              <input
+                type="text"
+                value={formData.address.streetNumber}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, streetNumber: e.target.value },
+                  })
+                }
+                className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+                placeholder="Street number"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+                Street Name
+              </label>
+              <input
+                type="text"
+                value={formData.address.streetName}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, streetName: e.target.value },
+                  })
+                }
+                className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+                placeholder="Street name"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+                City
+              </label>
+              <input
+                type="text"
+                value={formData.address.city}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, city: e.target.value },
+                  })
+                }
+                className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+                placeholder="City"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+                State
+              </label>
+              <input
+                type="text"
+                value={formData.address.state}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, state: e.target.value },
+                  })
+                }
+                className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+                placeholder="State"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+                Postal Code
+              </label>
+              <input
+                type="text"
+                value={formData.address.postalCode}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: { ...formData.address, postalCode: e.target.value },
+                  })
+                }
+                className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+                placeholder="Postal code"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Emergency Contact Name
+            </label>
+            <input
+              type="text"
+              value={formData.emergencyContactName}
+              onChange={(e) => setFormData({ ...formData, emergencyContactName: e.target.value })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+              placeholder="Enter emergency contact name"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-[#1A1F36] mb-2">
+              Emergency Contact Phone
+            </label>
+            <input
+              type="tel"
+              value={formData.emergencyContactPhone}
+              onChange={(e) => setFormData({ ...formData, emergencyContactPhone: e.target.value })}
+              className="w-full px-4 py-2.5 border border-[#E0E7F1] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent bg-white text-[#1A1F36]"
+              placeholder="Enter emergency contact phone"
+            />
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={() => setIsAddModalOpen(false)}
@@ -624,9 +857,10 @@ const Employees: React.FC = () => {
             </button>
             <button
               onClick={handleAddEmployee}
-              className="px-6 py-2.5 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors font-medium"
+              disabled={isLoading}
+              className="px-6 py-2.5 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Add Employee
+              {isLoading ? 'Adding...' : 'Add Employee'}
             </button>
           </div>
         </div>

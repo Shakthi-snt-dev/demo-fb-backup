@@ -17,3 +17,15 @@ export const UpdateStoreSettingsApi = (storeId: string) => `${BASE_URL}/StoreSet
 export const ResetApiKeyApi = (storeId: string) => `${BASE_URL}/StoreSettings/stores/${storeId}/reset-api-key`;
 export const SendVerificationEmailApi = (storeId: string) => `${BASE_URL}/StoreSettings/stores/${storeId}/send-verification-email`;
 export const VerifyStoreEmailApi = (storeId: string) => `${BASE_URL}/StoreSettings/stores/${storeId}/verify-email`;
+
+// Stores API
+export const GetStoresListApi = `${BASE_URL}/Stores/list`;
+
+// Employees API
+export const GetEmployeesByStoreApi = (storeId: string, role?: string) => {
+  const url = `${BASE_URL}/Employees/store/${storeId}`;
+  return role && role !== 'all' ? `${url}?role=${role}` : url;
+};
+export const CreateEmployeeApi = `${BASE_URL}/Employees`;
+export const UpdateEmployeeApi = (id: string) => `${BASE_URL}/Employees/${id}`;
+export const DeleteEmployeeApi = (id: string) => `${BASE_URL}/Employees/${id}`;

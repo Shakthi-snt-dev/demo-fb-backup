@@ -6,6 +6,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
@@ -15,6 +16,7 @@ const Modal: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
+  subtitle,
   children,
   size = 'md',
   showCloseButton = true,
@@ -56,23 +58,23 @@ const Modal: React.FC<ModalProps> = ({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Light sky background tint */}
-      <div className="absolute inset-0 bg-[#F5F8FF]/80 backdrop-blur-sm" />
-      
       {/* Modal */}
       <div
-        className={`relative bg-white rounded-2xl shadow-xl border border-[#E0E7F1] w-full ${sizeClasses[size]} transform transition-all duration-200 ${
-          isOpen ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
-        }`}
+        className={`relative bg-white rounded-xl shadow-2xl border border-[#E0E7F1] w-full ${sizeClasses[size]} max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Bird-theme header */}
-        <div className="flex items-center justify-between p-6 border-b border-[#E0E7F1] bg-[#F5F8FF]">
-          <h2 className="text-xl font-semibold text-[#1A1F36]">{title}</h2>
+        {/* Header */}
+        <div className="flex items-start justify-between p-5 sm:p-6 border-b border-[#E0E7F1] bg-white">
+          <div className="flex-1 pr-3">
+            <h2 className="text-xl sm:text-2xl font-bold text-[#1A1F36]">{title}</h2>
+            {subtitle && (
+              <p className="text-sm text-[#4A5568] mt-1.5">{subtitle}</p>
+            )}
+          </div>
           {showCloseButton && (
             <button
               onClick={onClose}
-              className="p-2 text-[#4A5568] hover:text-[#1A1F36] hover:bg-white rounded-lg transition-colors"
+              className="p-2 text-[#4A5568] hover:text-[#1A1F36] hover:bg-[#F5F8FF] rounded-lg transition-colors flex-shrink-0"
               aria-label="Close modal"
             >
               <HiXMark className="w-5 h-5" />
@@ -81,7 +83,7 @@ const Modal: React.FC<ModalProps> = ({
         </div>
         
         {/* Content */}
-        <div className="p-6">{children}</div>
+        <div className="p-5 sm:p-6 bg-white">{children}</div>
       </div>
     </div>
   );
