@@ -28,7 +28,7 @@ const Login: React.FC = () => {
       // Verify login was successful
       if (result.data.success ===true) {
         // Success - show toast with API response message
-        navigate('/dashboard');
+        navigate('/dashboard/pos');
 
         showToast({ 
           message: result.data.message || 'Login successful!', 

@@ -80,9 +80,9 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
         )}
 
-        {/* Mobile Close Button */}
+        {/* Mobile/Tablet Close Button */}
         {onMobileClose && (
-          <div className="lg:hidden flex items-center justify-end p-4 border-b border-white/10">
+          <div className="md:hidden flex items-center justify-end p-4 border-b border-white/10">
             <button
               onClick={onMobileClose}
               className="p-2 rounded-md hover:bg-white/10 transition-colors"
@@ -95,7 +95,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Desktop Collapse Button */}
         {onCollapseChange && !isCollapsed && (
-          <div className="hidden lg:flex items-center justify-end p-2 border-b border-white/10">
+          <div className="hidden md:flex items-center justify-end p-2 border-b border-white/10">
             <button
               onClick={() => onCollapseChange(!isCollapsed)}
               className="p-2 rounded-md hover:bg-white/10 transition-colors"
@@ -146,7 +146,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Collapse Button for Collapsed State */}
         {onCollapseChange && isCollapsed && (
-          <div className="hidden lg:flex items-center justify-center p-2 border-t border-white/10">
+          <div className="hidden md:flex items-center justify-center p-2 border-t border-white/10">
             <button
               onClick={() => onCollapseChange(!isCollapsed)}
               className="p-2 rounded-md hover:bg-white/10 transition-colors"

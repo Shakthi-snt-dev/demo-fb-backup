@@ -29,3 +29,10 @@ export const GetEmployeesByStoreApi = (storeId: string, role?: string) => {
 export const CreateEmployeeApi = `${BASE_URL}/Employees`;
 export const UpdateEmployeeApi = (id: string) => `${BASE_URL}/Employees/${id}`;
 export const DeleteEmployeeApi = (id: string) => `${BASE_URL}/Employees/${id}`;
+
+// Customers API
+export const GetCustomersApi = `${BASE_URL}/Customers`;
+export const GetCustomerByIdApi = (id: string) => `${BASE_URL}/Customers/${id}`;
+export const GetCustomersByStoreApi = (storeId: string) => `${BASE_URL}/Customers/store/${storeId}`;
+export const CreateCustomerApi = `${BASE_URL}/Customers`;
+export const UpdateCustomerApi = (id: string) => `${BASE_URL}/Customers/${id}`;

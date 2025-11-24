@@ -5,6 +5,7 @@ import settingsReducer from '../Slices/dashboard/settings/Update Profile'
 import securityReducer from '../Slices/dashboard/settings/security-slice'
 import storeSettingsReducer from '../Slices/dashboard/settings/store-settings-slice'
 import employeeReducer from '../Slices/dashboard/Employee/employee-slice'
+import customerReducer from '../Slices/dashboard/customers/customer-slice'
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     security: securityReducer,
     storeSettings: storeSettingsReducer,
     employee: employeeReducer,
+    customer: customerReducer,
   },
 })
 

@@ -1,416 +1,468 @@
 import React, { useState } from 'react';
-import {
-  HiMagnifyingGlass,
-  HiPlus,
-  HiChevronDown,
-  HiDevicePhoneMobile,
-  HiComputerDesktop,
-  HiTicket,
-  HiDocumentText,
-  HiShieldCheck,
-  HiEllipsisVertical,
-  HiReceiptPercent,
-  HiBell,
-  HiChevronUp,
-  HiCalculator,
-  HiTrash,
-  HiBuildingOffice2,
-} from 'react-icons/hi2';
+import { 
+  FiSearch, 
+  FiUser, 
+  FiTrash2, 
+  FiSave, 
+  FiDollarSign,
+  FiHeart,
+  FiChevronDown,
+  FiShoppingBag,
+  FiStar
+} from 'react-icons/fi';
+import { MdBuild, MdQrCodeScanner } from 'react-icons/md';
+
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  image?: string;
+  isFavorite: boolean;
+  isOutOfStock: boolean;
+}
 
 interface CartItem {
-  id: string;
+  id: number;
   name: string;
-  qty: number;
   price: number;
+  quantity: number;
   tax: number;
+  discount: number;
   total: number;
 }
 
-interface Category {
-  id: string;
-  name: string;
-  icon: React.ComponentType<{ className?: string }>;
-  color: string;
-  bgColor: string;
-}
-
 const POS: React.FC = () => {
-  const [cartItems] = useState<CartItem[]>([]);
-  const [itemSearch, setItemSearch] = useState('');
-  const [ticketSearch, setTicketSearch] = useState('');
-  const [subTotal] = useState(0);
-  const [discount] = useState(0);
-  const [tax] = useState(0);
+  const [activeTab, setActiveTab] = useState<'repairs' | 'products' | 'favorite'>('products');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const customerName = 'Walkin Customer';
 
-  const categories: Category[] = [
+  // Sample products data
+  const products: Product[] = [
     {
-      id: '1',
-      name: 'Mobile Repair',
-      icon: HiDevicePhoneMobile,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
+      id: 1,
+      name: 'DELL Studio XPS Keyboard',
+      description: '(USA) Original keyboard for DELL Studio XPS PP175 X PS PP3SL US layout Back...',
+      price: 59.99,
+      stock: 0,
+      isFavorite: true,
+      isOutOfStock: true,
     },
     {
-      id: '2',
-      name: 'Tablet Repair',
-      icon: HiComputerDesktop,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-100',
+      id: 2,
+      name: 'ARCTIC Case Fan',
+      description: '120mm ARCTIC Case Fan',
+      price: 19.99,
+      stock: 5,
+      isFavorite: true,
+      isOutOfStock: false,
     },
     {
-      id: '3',
-      name: 'Macbook Repair',
-      icon: HiComputerDesktop,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      id: 3,
+      name: 'Lenovo Charger',
+      description: '120W 19V 6.3AAC Adapter Charger For Lenovo Y410P YS10P',
+      price: 39.99,
+      stock: 8,
+      isFavorite: true,
+      isOutOfStock: false,
     },
     {
-      id: '4',
-      name: 'Onsite/Remote Assistance',
-      icon: HiBuildingOffice2,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      id: 4,
+      name: 'Product 4',
+      description: 'Product description here',
+      price: 29.99,
+      stock: 3,
+      isFavorite: false,
+      isOutOfStock: false,
+    },
+    {
+      id: 5,
+      name: 'Product 5',
+      description: 'Product description here',
+      price: 49.99,
+      stock: 10,
+      isFavorite: false,
+      isOutOfStock: false,
+    },
+    {
+      id: 6,
+      name: 'Product 6',
+      description: 'Product description here',
+      price: 79.99,
+      stock: 2,
+      isFavorite: false,
+      isOutOfStock: false,
     },
   ];
 
-  const calculateTotal = () => {
-    const itemsTotal = cartItems.reduce((sum, item) => sum + item.total, 0);
-    return itemsTotal - discount + tax;
+  const categories = [
+    { name: 'BUY BACKS', color: 'bg-purple-500' },
+    { name: 'ACCESSORIES', color: 'bg-purple-500' },
+    { name: 'TEMPERED GLASS', color: 'bg-blue-500' },
+    { name: 'CASE', color: 'bg-purple-500' },
+    { name: 'HANDSET', color: 'bg-orange-500' },
+    { name: 'WIRELESS CHARGER', color: 'bg-purple-500' },
+  ];
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    if (activeTab === 'favorite') {
+      return matchesSearch && product.isFavorite;
+    }
+    return matchesSearch;
+  });
+
+  const addToCart = (product: Product) => {
+    if (product.isOutOfStock) return;
+    
+    const existingItem = cartItems.find(item => item.id === product.id);
+    if (existingItem) {
+      setCartItems(cartItems.map(item =>
+        item.id === product.id
+          ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.price }
+          : item
+      ));
+    } else {
+      const newItem: CartItem = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        tax: product.price * 0.1, // 10% tax
+        discount: 0,
+        total: product.price,
+      };
+      setCartItems([...cartItems, newItem]);
+    }
   };
 
-  const totalItems = cartItems.reduce((sum, item) => sum + item.qty, 0);
-  const total = calculateTotal();
+  const removeFromCart = (id: number) => {
+    setCartItems(cartItems.filter(item => item.id !== id));
+  };
+
+  const updateQuantity = (id: number, quantity: number) => {
+    if (quantity <= 0) {
+      removeFromCart(id);
+      return;
+    }
+    setCartItems(cartItems.map(item => {
+      if (item.id === id) {
+        const newTotal = quantity * item.price;
+        return { ...item, quantity, total: newTotal, tax: newTotal * 0.1 };
+      }
+      return item;
+    }));
+  };
+
+  const subtotal = cartItems.reduce((sum, item) => sum + item.total, 0);
+  const totalTax = cartItems.reduce((sum, item) => sum + item.tax, 0);
+  const totalDiscount = cartItems.reduce((sum, item) => sum + item.discount, 0);
+  const total = subtotal + totalTax - totalDiscount;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header Section with Primary Color */}
-      <header className="bg-[#007BFF] text-white shadow-md">
-        <div className="px-4 md:px-6 py-3 md:py-4">
-          {/* Top Navigation Bar */}
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 md:gap-4 mb-3">
-            {/* Left: Logo and Navigation */}
-            <div className="flex items-center gap-4 md:gap-6 flex-wrap">
-              <h1 className="text-lg md:text-xl font-bold">Cell Care Plus</h1>
-              <nav className="hidden md:flex items-center gap-4 text-sm">
-                <button className="hover:text-white/80 transition-colors">Repairs</button>
-                <button className="hover:text-white/80 transition-colors">Inventory</button>
-                <button className="hover:text-white/80 transition-colors">Customer</button>
-                <button className="bg-white/20 px-3 py-1 rounded-md font-medium">Point Of Sale</button>
-                <button className="hover:text-white/80 transition-colors">Reports</button>
-                <button className="hover:text-white/80 transition-colors">Campaigner</button>
-                <button className="hover:text-white/80 transition-colors">Expense</button>
-              </nav>
-            </div>
+    <div className="flex flex-col lg:flex-row h-full bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Left Panel - Add Products */}
+      <div className="w-full lg:w-3/5 xl:w-3/5 flex flex-col bg-white dark:bg-gray-800 h-full overflow-hidden">
+        {/* Header */}
+        <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Products</h2>
+        </div>
 
-            {/* Right: Actions */}
-            <div className="flex items-center gap-2 md:gap-3 flex-wrap">
-              <button className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-md text-sm transition-colors">
-                Contact Support
-                <HiChevronDown className="inline-block ml-1 w-4 h-4" />
-              </button>
-              <span className="text-sm">0%</span>
-              <button className="p-2 hover:bg-white/20 rounded-md transition-colors">
-                <HiBell className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Secondary Bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-3 border-t border-white/20">
-            <button className="text-sm hover:text-white/80 transition-colors">
-              Re-open in POS
-            </button>
-            <div className="flex-1 max-w-md w-full">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Scan or enter Ticket ID"
-                  value={ticketSearch}
-                  onChange={(e) => setTicketSearch(e.target.value)}
-                  className="w-full pl-4 pr-8 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30 focus:border-white/40 text-white placeholder:text-white/70 text-sm"
-                />
-                <HiChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/70" />
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-md text-sm font-medium transition-colors">
-                Repairs
-              </button>
-              <button className="px-3 py-1.5 hover:bg-white/20 rounded-md text-sm transition-colors">
-                Unlocking
-              </button>
-              <button className="px-3 py-1.5 hover:bg-white/20 rounded-md text-sm transition-colors">
-                Products
-              </button>
-              <button className="px-3 py-1.5 hover:bg-white/20 rounded-md text-sm transition-colors">
-                Miscellaneous
-              </button>
-            </div>
+        {/* Search Bar */}
+        <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="relative">
+            <MdQrCodeScanner className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search Products & Repairparts"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+            />
           </div>
         </div>
-      </header>
 
-      {/* Main Content Area */}
-      <div className="flex-1 p-4 md:p-6 lg:p-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] xl:grid-cols-[1fr_450px] gap-6 max-w-[1600px] mx-auto">
-          {/* Left Section - Sales Transaction Details */}
-          <div className="space-y-4 md:space-y-6">
-            {/* Customer Information Card */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm">
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#007BFF] flex items-center justify-center text-white font-semibold text-lg md:text-xl flex-shrink-0">
-                    W
-                  </div>
-                  <div>
-                    <p className="text-sm md:text-base font-medium text-gray-900">
-                      Walkin Customer
-                    </p>
-                    <p className="text-xs md:text-sm text-gray-500">
-                      Default customer
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
-                    <HiMagnifyingGlass className="w-5 h-5" />
-                  </button>
-                  <button className="p-2 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors">
-                    <HiPlus className="w-5 h-5" />
-                  </button>
-                </div>
+        {/* Tabs */}
+        <div className="px-4 lg:px-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-1">
+            <button
+              onClick={() => setActiveTab('repairs')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'repairs'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <MdBuild className="w-4 h-4" />
+                Repairs
               </div>
-            </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('products')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'products'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FiShoppingBag className="w-4 h-4" />
+                Products
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('favorite')}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                activeTab === 'favorite'
+                  ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FiStar className="w-4 h-4" />
+                Favorite
+              </div>
+            </button>
+          </div>
+        </div>
 
-            {/* Item Entry */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm">
-              <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
-                <div className="flex-1 relative">
-                  <input
-                    type="text"
-                    placeholder="Enter item name, SKU or scan barcode"
-                    value={itemSearch}
-                    onChange={(e) => setItemSearch(e.target.value)}
-                    className="w-full px-4 py-2.5 md:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#007BFF] focus:border-transparent text-sm md:text-base"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 hidden sm:block">
-                    Ctrl S
-                  </span>
+        {/* Search All Products */}
+        <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search All Products"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <button className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center gap-2 transition-colors">
+              New
+              <FiChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Products Grid */}
+        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredProducts.map((product) => (
+              <div
+                key={product.id}
+                onClick={() => addToCart(product)}
+                className={`relative bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 p-3 cursor-pointer hover:shadow-md transition-shadow ${
+                  product.isOutOfStock ? 'opacity-60' : ''
+                }`}
+              >
+                {/* Product Image */}
+                <div className="w-full h-32 bg-gray-200 dark:bg-gray-600 rounded mb-2 flex items-center justify-center">
+                  {product.image ? (
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover rounded" />
+                  ) : (
+                    <div className="w-full h-full bg-gray-300 dark:bg-gray-500 rounded flex items-center justify-center">
+                      <FiShoppingBag className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                    </div>
+                  )}
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2.5 md:py-3 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors text-sm md:text-base font-medium whitespace-nowrap">
-                  <span>Advance Search</span>
-                  <HiChevronDown className="w-4 h-4" />
+
+                {/* Product Info */}
+                <div className="space-y-1">
+                  <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2">
+                    {product.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-xs font-semibold ${
+                      product.isOutOfStock 
+                        ? 'text-red-500 dark:text-red-400' 
+                        : 'text-green-600 dark:text-green-400'
+                    }`}>
+                      {product.isOutOfStock 
+                        ? 'Out of Stock' 
+                        : `In Stock: ${product.stock}`
+                      }
+                    </span>
+                  </div>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">
+                    £{product.price.toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Favorite Icon */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Toggle favorite logic here
+                  }}
+                  className="absolute bottom-2 right-2 p-1"
+                >
+                  <FiHeart
+                    className={`w-4 h-4 ${
+                      product.isFavorite
+                        ? 'fill-red-500 text-red-500'
+                        : 'text-gray-400 dark:text-gray-500'
+                    }`}
+                  />
                 </button>
               </div>
-            </div>
-
-            {/* Item List Table */}
-            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs md:text-sm font-semibold text-gray-900">
-                        QTY
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs md:text-sm font-semibold text-gray-900">
-                        Item Name
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs md:text-sm font-semibold text-gray-900">
-                        Price
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs md:text-sm font-semibold text-gray-900">
-                        Tax
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs md:text-sm font-semibold text-gray-900">
-                        Total
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cartItems.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-4 py-12 md:py-16 text-center text-gray-500 text-sm md:text-base"
-                        >
-                          No items added yet
-                        </td>
-                      </tr>
-                    ) : (
-                      cartItems.map((item) => (
-                        <tr
-                          key={item.id}
-                          className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-4 py-3 text-sm md:text-base text-gray-900">
-                            {item.qty}
-                          </td>
-                          <td className="px-4 py-3 text-sm md:text-base text-gray-900">
-                            {item.name}
-                          </td>
-                          <td className="px-4 py-3 text-sm md:text-base text-gray-900 text-right">
-                            ${item.price.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 text-sm md:text-base text-gray-900 text-right">
-                            ${item.tax.toFixed(2)}
-                          </td>
-                          <td className="px-4 py-3 text-sm md:text-base text-gray-900 text-right font-medium">
-                            ${item.total.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Transaction Summary */}
-            <div className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 shadow-sm">
-              <div className="space-y-3 md:space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm md:text-base text-gray-600">
-                    Total Items:
-                  </span>
-                  <span className="text-sm md:text-base font-medium text-gray-900">
-                    {totalItems}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm md:text-base text-gray-600">
-                    Sub Total:
-                  </span>
-                  <span className="text-sm md:text-base font-medium text-gray-900">
-                    ${subTotal.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm md:text-base text-gray-600">
-                    Discount:
-                  </span>
-                  <span className="text-sm md:text-base font-medium text-gray-900">
-                    ${discount.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm md:text-base text-gray-600">Tax:</span>
-                  <span className="text-sm md:text-base font-medium text-gray-900">
-                    ${tax.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200">
-                  <span className="text-base md:text-lg font-semibold text-gray-900">
-                    Total:
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base md:text-lg font-bold text-[#007BFF]">
-                      ${total.toFixed(2)}
-                    </span>
-                    <HiChevronUp className="w-4 h-4 text-gray-400" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
+        </div>
 
-          {/* Right Section - Categories and Actions */}
-          <div className="space-y-4 md:space-y-6">
-            {/* Breadcrumb Navigation */}
-            <div className="hidden lg:flex items-center gap-2 text-sm text-gray-600 flex-wrap">
-              <span className="hover:text-[#007BFF] cursor-pointer">Category</span>
-              <span className="text-[#007BFF]">&gt;</span>
-              <span className="hover:text-[#007BFF] cursor-pointer">Manufacturer</span>
-              <span className="text-[#007BFF]">&gt;</span>
-              <span className="hover:text-[#007BFF] cursor-pointer">Devices</span>
-              <span className="text-[#007BFF]">&gt;</span>
-              <span className="hover:text-[#007BFF] cursor-pointer">Problems</span>
-              <span className="text-[#007BFF]">&gt;</span>
-              <span className="hover:text-[#007BFF] cursor-pointer">Parts</span>
-              <span className="text-[#007BFF]">&gt;</span>
-              <span className="text-gray-900 font-medium">Details</span>
-            </div>
-
-            {/* Service Category Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 md:gap-4">
-              {/* Add Category Card */}
-              <div className="bg-white border-2 border-dashed border-gray-300 rounded-xl p-4 md:p-6 flex flex-col items-center justify-center min-h-[120px] md:min-h-[140px] hover:border-[#007BFF] hover:bg-blue-50 transition-all cursor-pointer group">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-blue-50 group-hover:bg-blue-100 flex items-center justify-center mb-3 transition-colors">
-                  <HiPlus className="w-6 h-6 md:w-7 md:h-7 text-[#007BFF]" />
-                </div>
-                <p className="text-sm md:text-base font-medium text-gray-900 text-center">
-                  Add Category
-                </p>
-              </div>
-
-              {/* Service Category Cards */}
-              {categories.map((category) => {
-                const Icon = category.icon;
-                return (
-                  <div
-                    key={category.id}
-                    className="bg-white border border-gray-200 rounded-xl p-4 md:p-6 flex flex-col items-center justify-center min-h-[120px] md:min-h-[140px] hover:shadow-md transition-all cursor-pointer"
-                  >
-                    <div
-                      className={`w-12 h-12 md:w-14 md:h-14 ${category.bgColor} rounded-lg flex items-center justify-center mb-3`}
-                    >
-                      <Icon className={`w-6 h-6 md:w-7 md:h-7 ${category.color}`} />
-                    </div>
-                    <p className="text-sm md:text-base font-medium text-gray-900 text-center">
-                      {category.name}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 md:gap-3">
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors text-sm md:text-base font-medium">
-                <HiTicket className="w-5 h-5" />
-                <span>View Tickets</span>
+        {/* Category Buttons */}
+        <div className="px-4 lg:px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-2">
+            {categories.map((category, index) => (
+              <button
+                key={index}
+                className={`${category.color} text-white px-3 py-3 rounded-lg font-medium text-xs lg:text-sm hover:opacity-90 transition-opacity flex items-center justify-center gap-1`}
+              >
+                <FiShoppingBag className="w-4 h-4" />
+                <span className="hidden lg:inline">{category.name}</span>
+                <span className="lg:hidden">{category.name.split(' ')[0]}</span>
               </button>
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors text-sm md:text-base font-medium">
-                <HiDocumentText className="w-5 h-5" />
-                <span>View Invoices</span>
-              </button>
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors text-sm md:text-base font-medium">
-                <HiCalculator className="w-5 h-5" />
-                <span>Create Estimate</span>
-              </button>
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors text-sm md:text-base font-medium">
-                <HiTicket className="w-5 h-5" />
-                <span>Create Ticket</span>
-              </button>
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors text-sm md:text-base font-medium">
-                <HiShieldCheck className="w-5 h-5" />
-                <span>Warranty Claim</span>
-              </button>
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-white border border-gray-200 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors text-sm md:text-base font-medium">
-                <HiEllipsisVertical className="w-5 h-5" />
-                <span>More Actions</span>
-              </button>
-              <button className="flex items-center gap-3 px-4 py-2.5 md:py-3 bg-red-50 border border-red-200 text-red-700 rounded-lg hover:bg-red-100 transition-colors text-sm md:text-base font-medium">
-                <HiTrash className="w-5 h-5" />
-                <span>Cancel</span>
-              </button>
-              <button className="col-span-2 lg:col-span-1 flex items-center justify-center gap-3 px-4 py-3 md:py-4 bg-[#007BFF] text-white rounded-lg hover:bg-[#0065D1] transition-colors text-base md:text-lg font-semibold shadow-md">
-                <HiReceiptPercent className="w-5 h-5 md:w-6 md:h-6" />
-                <span>Checkout</span>
-              </button>
-            </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Footer Section with Primary Color */}
-      <footer className="bg-[#007BFF] text-white py-4 md:py-6 px-4 md:px-6 mt-auto">
-        <div className="max-w-[1600px] mx-auto text-center text-xs md:text-sm">
-          <p>
-            © 2025 - Cell Care Plus - 3350 Fairview St. Unit 11, Burlington Canada L7N 3L5 - +1 647-766-7971
-          </p>
+      {/* Right Panel - Ticket Preview */}
+      <div className="w-full lg:w-2/5 xl:w-2/5 flex flex-col bg-white dark:bg-gray-800 h-full border-l border-gray-200 dark:border-gray-700">
+        {/* Header */}
+        <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Ticket Preview</h2>
         </div>
-      </footer>
+
+        {/* Customer Info */}
+        <div className="px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <FiUser className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {customerName}
+              </span>
+            </div>
+            <button className="px-3 py-1.5 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors">
+              Add Customer
+            </button>
+          </div>
+        </div>
+
+        {/* Items Table Header */}
+        <div className="px-4 lg:px-6 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <div className="grid grid-cols-12 gap-2 text-xs font-semibold text-gray-600 dark:text-gray-400">
+            <div className="col-span-4">Item name</div>
+            <div className="col-span-2">Price</div>
+            <div className="col-span-2">Qty/Hr</div>
+            <div className="col-span-1">Tax</div>
+            <div className="col-span-1">Disc</div>
+            <div className="col-span-2">Total</div>
+          </div>
+        </div>
+
+        {/* Items List */}
+        <div className="flex-1 overflow-y-auto px-4 lg:px-6 py-4">
+          {cartItems.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <div className="w-3 h-3 bg-red-500 rounded-full mx-auto mb-2"></div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">No items added</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {cartItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="grid grid-cols-12 gap-2 items-center py-2 border-b border-gray-100 dark:border-gray-700"
+                >
+                  <div className="col-span-4 text-sm text-gray-900 dark:text-white truncate">
+                    {item.name}
+                  </div>
+                  <div className="col-span-2 text-sm text-gray-600 dark:text-gray-400">
+                    £{item.price.toFixed(2)}
+                  </div>
+                  <div className="col-span-2">
+                    <input
+                      type="number"
+                      min="1"
+                      value={item.quantity}
+                      onChange={(e) => updateQuantity(item.id, parseInt(e.target.value) || 1)}
+                      className="w-full px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
+                    />
+                  </div>
+                  <div className="col-span-1 text-xs text-gray-600 dark:text-gray-400">
+                    £{item.tax.toFixed(2)}
+                  </div>
+                  <div className="col-span-1 text-xs text-gray-600 dark:text-gray-400">
+                    £{item.discount.toFixed(2)}
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between">
+                    <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                      £{item.total.toFixed(2)}
+                    </span>
+                    <button
+                      onClick={() => removeFromCart(item.id)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      <FiTrash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Summary */}
+        <div className="px-4 lg:px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Sub Total</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                £{subtotal.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Discount</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                £{totalDiscount.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Tax</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                £{totalTax.toFixed(2)}
+              </span>
+            </div>
+            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-200 dark:border-gray-700">
+              <span className="text-gray-900 dark:text-white">Total</span>
+              <span className="text-gray-900 dark:text-white">£{total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <button className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors">
+              <FiTrash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Delete</span>
+            </button>
+            <button className="flex-1 px-4 py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors">
+              <FiSave className="w-4 h-4" />
+              <span className="hidden sm:inline">Save Draft</span>
+            </button>
+            <button className="flex-1 px-4 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-lg flex items-center justify-center gap-2 transition-colors font-semibold">
+              <FiDollarSign className="w-4 h-4" />
+              <span className="hidden sm:inline">Checkout</span>
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
