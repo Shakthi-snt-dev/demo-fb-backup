@@ -156,23 +156,56 @@ const TopHeader: React.FC<TopHeaderProps> = ({ onMenuClick }) => {
                 {/* Dropdown Menu */}
                 {item.hasDropdown && item.showDropdown && (
                   <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[180px] z-50">
-                    <button
-                      onClick={() => {
-                        navigate(item.path);
-                        item.setShowDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      {item.name} Overview
-                    </button>
-                    <button
-                      onClick={() => {
-                        item.setShowDropdown(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-                    >
-                      {item.name} Settings
-                    </button>
+                    {item.name === 'Inventory' ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate(item.path);
+                            item.setShowDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          {item.name} Overview
+                        </button>
+                        <button
+                          onClick={() => {
+                            navigate('/dashboard/products');
+                            item.setShowDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          Products
+                        </button>
+                        <button
+                          onClick={() => {
+                            item.setShowDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          {item.name} Settings
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => {
+                            navigate(item.path);
+                            item.setShowDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          {item.name} Overview
+                        </button>
+                        <button
+                          onClick={() => {
+                            item.setShowDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        >
+                          {item.name} Settings
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

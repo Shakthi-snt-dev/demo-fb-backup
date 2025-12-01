@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { 
   HiHome, 
   HiShoppingCart, 
@@ -7,6 +7,7 @@ import {
   HiWrenchScrewdriver,
   HiUserGroup,
   HiUsers,
+  HiTruck,
   HiChatBubbleLeftRight,
   HiChartBar,
   HiCog6Tooth,
@@ -22,12 +23,25 @@ interface NavItem {
   path: string;
   icon: React.ComponentType<{ className?: string }>;
   hasDropdown?: boolean;
+  dropdownItems?: { name: string; path: string }[];
 }
 
 const navItems: NavItem[] = [
   { name: 'Dashboard', path: '/dashboard', icon: HiHome },
   { name: 'POS', path: '/dashboard/pos', icon: HiShoppingCart },
-  { name: 'Inventory', path: '/dashboard/inventory', icon: HiCube, hasDropdown: true },
+  { 
+    name: 'Inventory', 
+    path: '/dashboard/inventory', 
+    icon: HiCube, 
+    hasDropdown: true,
+    dropdownItems: [
+      { name: 'Inventory Overview', path: '/dashboard/inventory' },
+      { name: 'Products', path: '/dashboard/products' },
+      { name: 'Category', path: '/dashboard/category' },
+      { name: 'Sub-Category', path: '/dashboard/sub-category' },
+      { name: 'Suppliers', path: '/dashboard/suppliers' },
+    ]
+  },
   { name: 'Repairs', path: '/dashboard/repairs', icon: HiWrenchScrewdriver },
   { name: 'Customers', path: '/dashboard/customers', icon: HiUserGroup },
   { name: 'Employees', path: '/dashboard/employees', icon: HiUsers, hasDropdown: true },
@@ -48,11 +62,38 @@ const Sidebar: React.FC<SidebarProps> = ({
   onMobileClose 
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [openDropdowns, setOpenDropdowns] = useState<{ [key: string]: boolean }>({});
+  const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Determine the blue color - using a solid blue similar to the image
   // Using a vibrant blue that matches the image description
   const sidebarBlue = '#2563EB'; // A solid vibrant blue color
+
+  // Toggle dropdown
+  const toggleDropdown = (itemPath: string) => {
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [itemPath]: !prev[itemPath]
+    }));
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      Object.keys(dropdownRefs.current).forEach(key => {
+        if (dropdownRefs.current[key] && !dropdownRefs.current[key]?.contains(event.target as Node)) {
+          setOpenDropdowns(prev => ({ ...prev, [key]: false }));
+        }
+      });
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   return (
     <aside
@@ -111,33 +152,89 @@ const Sidebar: React.FC<SidebarProps> = ({
           <ul className="space-y-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+              let isActive = location.pathname === item.path || location.pathname.startsWith(item.path + '/');
+              // Also highlight Inventory when on Products, Category, Sub-Category, or Suppliers page
+              if (item.path === '/dashboard/inventory' && (location.pathname === '/dashboard/products' || location.pathname === '/dashboard/category' || location.pathname === '/dashboard/sub-category' || location.pathname === '/dashboard/suppliers' || location.pathname.startsWith('/dashboard/inventory'))) {
+                isActive = true;
+              }
+              const isDropdownOpen = openDropdowns[item.path] || false;
               
               return (
-                <li key={item.path}>
-                  <Link
-                    to={item.path}
-                    onClick={onMobileClose}
-                    className={`
-                      flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group
-                      ${isActive 
-                        ? 'bg-white/15 text-white shadow-sm' 
-                        : 'text-white/85 hover:bg-white/10 hover:text-white'
-                      }
-                      ${isCollapsed ? 'justify-center' : ''}
-                    `}
-                    title={isCollapsed ? item.name : undefined}
-                  >
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/75 group-hover:text-white'}`} />
-                    {!isCollapsed && (
-                      <>
-                        <span className="font-medium text-sm flex-1 leading-tight" style={{ fontFamily: 'inherit' }}>{item.name}</span>
-                        {item.hasDropdown && (
-                          <HiChevronDown className="w-4 h-4 text-white/60 flex-shrink-0" />
+                <li key={item.path} className="relative">
+                  {item.hasDropdown && item.dropdownItems ? (
+                    <div ref={el => dropdownRefs.current[item.path] = el}>
+                      <button
+                        onClick={() => !isCollapsed && toggleDropdown(item.path)}
+                        className={`
+                          w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group
+                          ${isActive 
+                            ? 'bg-white/15 text-white shadow-sm' 
+                            : 'text-white/85 hover:bg-white/10 hover:text-white'
+                          }
+                          ${isCollapsed ? 'justify-center' : ''}
+                        `}
+                        title={isCollapsed ? item.name : undefined}
+                      >
+                        <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/75 group-hover:text-white'}`} />
+                        {!isCollapsed && (
+                          <>
+                            <span className="font-medium text-sm flex-1 leading-tight text-left" style={{ fontFamily: 'inherit' }}>{item.name}</span>
+                            <HiChevronDown className={`w-4 h-4 text-white/60 flex-shrink-0 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                          </>
                         )}
-                      </>
-                    )}
-                  </Link>
+                      </button>
+                      {!isCollapsed && isDropdownOpen && (
+                        <div className="mt-1 ml-4 space-y-0.5">
+                          {item.dropdownItems.map((dropdownItem) => {
+                            const isDropdownActive = location.pathname === dropdownItem.path;
+                            return (
+                              <Link
+                                key={dropdownItem.path}
+                                to={dropdownItem.path}
+                                onClick={() => {
+                                  onMobileClose?.();
+                                  setOpenDropdowns(prev => ({ ...prev, [item.path]: false }));
+                                }}
+                                className={`
+                                  block px-3 py-2 rounded-md transition-all duration-200 text-sm
+                                  ${isDropdownActive 
+                                    ? 'bg-white/20 text-white font-medium' 
+                                    : 'text-white/75 hover:bg-white/10 hover:text-white'
+                                  }
+                                `}
+                              >
+                                {dropdownItem.name}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <Link
+                      to={item.path}
+                      onClick={onMobileClose}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group
+                        ${isActive 
+                          ? 'bg-white/15 text-white shadow-sm' 
+                          : 'text-white/85 hover:bg-white/10 hover:text-white'
+                        }
+                        ${isCollapsed ? 'justify-center' : ''}
+                      `}
+                      title={isCollapsed ? item.name : undefined}
+                    >
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-white/75 group-hover:text-white'}`} />
+                      {!isCollapsed && (
+                        <>
+                          <span className="font-medium text-sm flex-1 leading-tight" style={{ fontFamily: 'inherit' }}>{item.name}</span>
+                          {item.hasDropdown && (
+                            <HiChevronDown className="w-4 h-4 text-white/60 flex-shrink-0" />
+                          )}
+                        </>
+                      )}
+                    </Link>
+                  )}
                 </li>
               );
             })}

@@ -5,6 +5,7 @@ import App from './App.tsx'
 import { Provider } from 'react-redux'
 import { store } from '@src/store'
 import { ToastProvider } from './components/Toast'
+import { ConfirmToastProvider } from './components/ConfirmToast'
 import { DarkModeProvider } from './contexts/DarkModeContext'
 
 createRoot(document.getElementById('root')!).render(
@@ -12,7 +13,9 @@ createRoot(document.getElementById('root')!).render(
     <Provider store={store}>
       <DarkModeProvider>
         <ToastProvider>
-          <App />
+          <ConfirmToastProvider>
+            <App />
+          </ConfirmToastProvider>
         </ToastProvider>
       </DarkModeProvider>
     </Provider>

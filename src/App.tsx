@@ -13,9 +13,14 @@ import POSLayout from './components/POSLayout'
 import Dashboard from './Pages/dashboard/Dashboard'
 import POS from './Pages/dashboard/POS'
 import Inventory from './Pages/dashboard/Inventory'
+import Products from './Pages/dashboard/prodects/Products.tsx'
+import AddProduct from './Pages/dashboard/prodects/add-prodects'
+import Category from './Pages/dashboard/prodects/Category'
+import SubCategory from './Pages/dashboard/prodects/Sub-Category'
 import Repairs from './Pages/dashboard/Repairs'
 import Customers from './Pages/dashboard/Customers'
 import Employees from './Pages/dashboard/Employees'
+import Suppliers from './Pages/dashboard/Suppliers'
 import Messages from './Pages/dashboard/message/Messages.tsx'
 import Reports from './Pages/dashboard/Reports'
 import Settings from './Pages/dashboard/settings/Update-Profile.tsx'
@@ -67,6 +72,46 @@ function App() {
           }
         />
         <Route
+          path="/dashboard/products"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Products />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/add-products"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <AddProduct />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/category"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Category />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/sub-category"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <SubCategory />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/dashboard/repairs"
           element={
             <ProtectedRoute>
@@ -92,6 +137,16 @@ function App() {
             <ProtectedRoute>
               <DashboardLayout>
                 <Employees />
+              </DashboardLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/dashboard/suppliers"
+          element={
+            <ProtectedRoute>
+              <DashboardLayout>
+                <Suppliers />
               </DashboardLayout>
             </ProtectedRoute>
           }

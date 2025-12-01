@@ -36,3 +36,32 @@ export const GetCustomerByIdApi = (id: string) => `${BASE_URL}/Customers/${id}`;
 export const GetCustomersByStoreApi = (storeId: string) => `${BASE_URL}/Customers/store/${storeId}`;
 export const CreateCustomerApi = `${BASE_URL}/Customers`;
 export const UpdateCustomerApi = (id: string) => `${BASE_URL}/Customers/${id}`;
+
+// Products API
+export const GetProductsApi = `${BASE_URL}/Products`;
+export const GetProductByIdApi = (id: string) => `${BASE_URL}/Products/${id}`;
+export const CreateProductApi = `${BASE_URL}/Products`;
+export const UpdateProductApi = (id: string) => `${BASE_URL}/Products/${id}`;
+export const DeleteProductApi = (id: string) => `${BASE_URL}/Products/${id}`;
+export const SearchProductsApi = (searchTerm: string) => `${BASE_URL}/Products/Search?searchTerm=${encodeURIComponent(searchTerm)}`;
+
+// Product Categories API
+export const GetProductCategoriesApi = `${BASE_URL}/ProductCategories`;
+export const CreateProductCategoryApi = `${BASE_URL}/ProductCategories`;
+export const UpdateProductCategoryApi = (id: string) => `${BASE_URL}/ProductCategories/${id}`;
+export const DeleteProductCategoryApi = (id: string) => `${BASE_URL}/ProductCategories/${id}`;
+
+// Product SubCategories API
+export const GetProductSubCategoriesApi = `${BASE_URL}/ProductSubCategories`;
+export const GetProductSubCategoriesByCategoryApi = (categoryId: string) => `${BASE_URL}/ProductSubCategories/category/${categoryId}`;
+export const CreateProductSubCategoryApi = `${BASE_URL}/ProductSubCategories`;
+export const UpdateProductSubCategoryApi = (id: string) => `${BASE_URL}/ProductSubCategories/${id}`;
+export const DeleteProductSubCategoryApi = (id: string) => `${BASE_URL}/ProductSubCategories/${id}`;
+
+// Suppliers API
+export const GetSuppliersApi = `${BASE_URL}/Suppliers`;
+export const GetSupplierByIdApi = (id: string) => `${BASE_URL}/Suppliers/${id}`;
+export const CreateSupplierApi = `${BASE_URL}/Suppliers`;
+export const UpdateSupplierApi = (id: string) => `${BASE_URL}/Suppliers/${id}`;
+export const DeleteSupplierApi = (id: string) => `${BASE_URL}/Suppliers/${id}`;
+export const GetActiveSuppliersApi = `${BASE_URL}/Suppliers/active`;

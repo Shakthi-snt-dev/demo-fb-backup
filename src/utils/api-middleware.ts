@@ -119,3 +119,28 @@ export const apiPatch = async (
   );
 };
 
+/**
+ * Convenience wrapper for file upload requests (multipart/form-data)
+ */
+export const apiPostFile = async (
+  url: string,
+  formData: FormData,
+  requiresAuth: boolean = true
+): Promise<Response> => {
+  const token = localStorage.getItem('token');
+  
+  const headers: HeadersInit = {};
+  
+  // Add authorization token if required and available
+  if (requiresAuth && token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  
+  // Don't set Content-Type for FormData - browser will set it with boundary
+  return fetch(url, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+};
+
